@@ -1058,7 +1058,7 @@ declare namespace fin {
          * Registers an event listener on the specified event.
          */
         addEventListener(
-            type: 'bounds-changed'|'bounds-changing', listener: (event: WindowBoundsEvent) => void, callback?: () => void,
+            type: 'bounds-changed' | 'bounds-changing' | 'begin-user-bounds-changing', listener: (event: WindowBoundsEvent) => void, callback?: () => void,
             errorCallback?: (reason: string) => void): void;
         addEventListener(
             type: OpenFinWindowEventType,
@@ -1590,7 +1590,7 @@ declare namespace fin {
     type OpenFinSystemEventType = 'application-closed'|'application-crashed'|'application-created'|'application-started'|'desktop-icon-clicked'|
         'idle-state-changed'|'monitor-info-changed'|'session-changed';
 
-    type OpenFinWindowEventType = 'auth-requested'|'blurred'|'bounds-changed'|'bounds-changing'|'close-requested'|'closed'|'disabled-frame-bounds-changed'|
+    type OpenFinWindowEventType = 'begin-user-bounds-changing' | 'auth-requested'|'blurred'|'bounds-changed'|'bounds-changing'|'close-requested'|'closed'|'disabled-frame-bounds-changed'|
         'disabled-frame-bounds-changing'|'embedded'|'external-process-exited'|'external-process-started'|'focused'|'frame-disabled'|'frame-enabled'|
         'group-changed'|'hidden'|'initialized'|'maximized'|'minimized'|'navigation-rejected'|'restored'|'show-requested'|'shown';
 

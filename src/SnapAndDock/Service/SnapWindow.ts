@@ -1,6 +1,7 @@
 import {Signal1, Signal2} from './Signal';
 import {SnapGroup} from './SnapGroup';
 import {p} from './utils/async';
+import {isCitrix, notCitrix} from './utils/citrix';
 import {isWin10} from './utils/platform';
 import {Point, PointUtils} from './utils/PointUtils';
 import {Rectangle} from './utils/RectUtils';
@@ -39,6 +40,8 @@ export enum eTransformType {
     MOVE = 1 << 0,
     RESIZE = 1 << 1
 }
+
+const getMousePosition = p(fin.desktop.System.getMousePosition);
 
 export class SnapWindow {
     public static async getWindowState(window: fin.OpenFinWindow): Promise<WindowState> {
@@ -115,14 +118,14 @@ export class SnapWindow {
     private id: string;  // Created from window uuid and name
     private group: SnapGroup;
     private registered: boolean;
-
+    private mouseTracker: NodeJS.Timer|null;
     // State tracking for "synth move" detection
     private boundsChangeCountSinceLastCommit: number;
 
     constructor(group: SnapGroup, window: fin.OpenFinWindow, initialState: WindowState) {
         this.window = window;
+        this.mouseTracker = null;
         this.state = initialState;
-
         this.identity = {uuid: window.uuid, name: window.name};
         this.id = `${window.uuid}/${window.name}`;
         this.registered = true;
@@ -135,10 +138,7 @@ export class SnapWindow {
         window.addEventListener('bounds-changed', (event: fin.WindowBoundsEvent) => {
             this.window.updateOptions({opacity: 1.0});
             const bounds: fin.WindowBounds = this.checkBounds(event);
-            const halfSize: Point = {x: bounds.width / 2, y: bounds.height / 2};
-            const center: Point = {x: bounds.left + halfSize.x, y: bounds.top + halfSize.y};
-
-            this.updateState({center, halfSize});
+            this.applyBounds(bounds);
             if (this.boundsChangeCountSinceLastCommit > 1) {
                 this.onCommit.emit(this);
             } else {
@@ -177,22 +177,40 @@ export class SnapWindow {
         window.addEventListener('closed', () => {
             this.onClose.emit(this);
         });
-        window.addEventListener('bounds-changing', async (event: fin.WindowBoundsEvent) => {
-            this.window.updateOptions({opacity: 0.8});
-            const bounds: fin.WindowBounds = this.checkBounds(event);
-            const halfSize: Point = {x: bounds.width / 2, y: bounds.height / 2};
-            const center: Point = {x: bounds.left + halfSize.x, y: bounds.top + halfSize.y};
-
-            // Convert 'changeType' into our enum type
-            const type: Mask<eTransformType> = event.changeType + 1;
-
-            this.updateState({center, halfSize});
-            this.boundsChangeCountSinceLastCommit++;
-
-            if (this.boundsChangeCountSinceLastCommit > 1) {
-                this.onTransform.emit(this, type);
+        window.addEventListener('begin-user-bounds-changing', async (event) => {
+            if (isCitrix()) {
+                const initialPostion = await getMousePosition();
+                console.log('initial', this.state.center.x, initialPostion.top);
+                const offsetY = this.state.center.y - initialPostion.top;
+                const offsetX = this.state.center.x - initialPostion.left;
+                this.mouseTracker = setInterval(async () => {
+                    const position = await getMousePosition();
+                    console.log('mouse', position);
+                    this.updateState({center: {x: position.left + offsetX, y: position.top + offsetY}});
+                    this.onTransform.emit(this, eTransformType.MOVE);
+                }, 16);
+            } else {
+                console.log('not citrix');
             }
-        });
+        }, console.log, console.error);
+        // window.addEventListener('bounds-changing', async (event: fin.WindowBoundsEvent) => {
+        //     if (isCitrix()){
+        //         notCitrix();
+        //         this.stopMouseTracker();
+        //     }
+        //     this.window.updateOptions({opacity: 0.8});
+        //     const bounds: fin.WindowBounds = this.checkBounds(event);
+        //     this.applyBounds(bounds);
+
+        //     // Convert 'changeType' into our enum type
+        //     const type: Mask<eTransformType> = event.changeType + 1;
+
+        //     this.boundsChangeCountSinceLastCommit++;
+
+        //     if (this.boundsChangeCountSinceLastCommit > 1) {
+        //         this.onTransform.emit(this, type);
+        //     }
+        // });
     }
 
     public getId(): string {
@@ -203,6 +221,11 @@ export class SnapWindow {
         return this.window;
     }
 
+    private stopMouseTracker() {
+        if (this.mouseTracker !== null) {
+            clearInterval(this.mouseTracker);
+        }
+    }
     /**
      * Returns the group that this window currently belongs to.
      *
@@ -212,7 +235,6 @@ export class SnapWindow {
     public getGroup(): SnapGroup {
         return this.group;
     }
-
     /**
      * Moves this window into a different group. Has no effect if function is called with the group that this window
      * currently belongs to. This also handles removing the window from it's previous group.
@@ -253,7 +275,11 @@ export class SnapWindow {
             }
         }
     }
-
+    public applyBounds(bounds: fin.WindowBounds) {
+        const halfSize: Point = {x: bounds.width / 2, y: bounds.height / 2};
+        const center: Point = {x: bounds.left + halfSize.x, y: bounds.top + halfSize.y};
+        this.updateState({center, halfSize});
+    }
     public getState(): WindowState {
         return this.state;
     }
