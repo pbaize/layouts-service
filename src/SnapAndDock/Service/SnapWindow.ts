@@ -133,9 +133,12 @@ export class SnapWindow {
 
         this.group = group;
         group.addWindow(this);
+    }
 
+    public init() {
         // Add listeners
-        window.addEventListener('bounds-changed', (event: fin.WindowBoundsEvent) => {
+        this.window.addEventListener('bounds-changed', (event: fin.WindowBoundsEvent) => {
+            this.stopMouseTracker();
             this.window.updateOptions({opacity: 1.0});
             const bounds: fin.WindowBounds = this.checkBounds(event);
             this.applyBounds(bounds);
@@ -146,73 +149,70 @@ export class SnapWindow {
             }
             this.boundsChangeCountSinceLastCommit = 0;
         });
-        window.addEventListener('frame-disabled', () => {
+        this.window.addEventListener('frame-disabled', () => {
             this.updateState({frame: false});
             this.onModified.emit(this);
         });
-        window.addEventListener('frame-enabled', () => {
+        this.window.addEventListener('frame-enabled', () => {
             this.updateState({frame: true});
             this.onModified.emit(this);
         });
-        window.addEventListener('maximized', () => {
+        this.window.addEventListener('maximized', () => {
             this.updateState({state: 'maximized'});
             this.onModified.emit(this);
         });
-        window.addEventListener('minimized', () => {
+        this.window.addEventListener('minimized', () => {
             this.updateState({state: 'minimized'});
             this.onModified.emit(this);
         });
-        window.addEventListener('restored', () => {
+        this.window.addEventListener('restored', () => {
             this.updateState({state: 'normal'});
             // this.onModified.emit(this);
         });
-        window.addEventListener('hidden', () => {
+        this.window.addEventListener('hidden', () => {
             this.updateState({hidden: true});
             this.onModified.emit(this);
         });
-        window.addEventListener('shown', () => {
+        this.window.addEventListener('shown', () => {
             this.updateState({hidden: false});
             // this.onModified.emit(this);
         });
-        window.addEventListener('closed', () => {
+        this.window.addEventListener('closed', () => {
             this.onClose.emit(this);
         });
-        window.addEventListener('begin-user-bounds-changing', async (event) => {
+        this.window.addEventListener('begin-user-bounds-changing', async (event) => {
             if (isCitrix()) {
                 const initialPostion = await getMousePosition();
-                console.log('initial', this.state.center.x, initialPostion.top);
                 const offsetY = this.state.center.y - initialPostion.top;
                 const offsetX = this.state.center.x - initialPostion.left;
                 this.mouseTracker = setInterval(async () => {
                     const position = await getMousePosition();
-                    console.log('mouse', position);
+                    this.boundsChangeCountSinceLastCommit++;
                     this.updateState({center: {x: position.left + offsetX, y: position.top + offsetY}});
                     this.onTransform.emit(this, eTransformType.MOVE);
                 }, 16);
-            } else {
-                console.log('not citrix');
             }
-        }, console.log, console.error);
-        // window.addEventListener('bounds-changing', async (event: fin.WindowBoundsEvent) => {
-        //     if (isCitrix()){
-        //         notCitrix();
-        //         this.stopMouseTracker();
-        //     }
-        //     this.window.updateOptions({opacity: 0.8});
-        //     const bounds: fin.WindowBounds = this.checkBounds(event);
-        //     this.applyBounds(bounds);
+        });
+        this.window.addEventListener('bounds-changing', async (event: fin.WindowBoundsEvent) => {
+            if (isCitrix()) {
+                notCitrix();
+                this.stopMouseTracker();
+            }
+            this.window.updateOptions({opacity: 0.8});
+            const bounds: fin.WindowBounds = this.checkBounds(event);
+            this.applyBounds(bounds);
 
-        //     // Convert 'changeType' into our enum type
-        //     const type: Mask<eTransformType> = event.changeType + 1;
+            // Convert 'changeType' into our enum type
+            const type: Mask<eTransformType> = event.changeType + 1;
 
-        //     this.boundsChangeCountSinceLastCommit++;
+            this.boundsChangeCountSinceLastCommit++;
 
-        //     if (this.boundsChangeCountSinceLastCommit > 1) {
-        //         this.onTransform.emit(this, type);
-        //     }
-        // });
+            if (this.boundsChangeCountSinceLastCommit > 1) {
+                this.onTransform.emit(this, type);
+            }
+        });
+        return this;
     }
-
     public getId(): string {
         return this.id;
     }

@@ -75,7 +75,7 @@ export class SnapService {
         const app: fin.OpenFinApplication = fin.desktop.Application.wrap(uuid);
 
         // Register main window
-        this.addWindow(app.getWindow()).then(window => console.log('Registered app window: ' + window.getId()));
+        this.addWindow(app.getWindow()).then(win => win.init()).then(window => console.log('Registered app window: ' + window.getId()));
 
         // Register child windows
         app.getChildWindows((children: fin.OpenFinWindow[]) => {
@@ -86,7 +86,9 @@ export class SnapService {
 
         // Listen for future windows
         app.addEventListener('window-created', (event: fin.WindowEvent) => {
-            this.addWindow(fin.desktop.Window.wrap(event.uuid, event.name)).then(window => console.log('App created new window: ' + window.getId()));
+            this.addWindow(fin.desktop.Window.wrap(event.uuid, event.name))
+                .then(win => win.init())
+                .then(window => console.log('App created new window: ' + window.getId()));
         });
     }
 
