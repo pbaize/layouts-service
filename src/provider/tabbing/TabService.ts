@@ -30,7 +30,7 @@ export class TabService {
     /**
      * Flag to disable / enable tabbing operations.
      */
-    public disableTabbingOperations = false;
+    public disableTabbingOperations = true;
 
     private _model: DesktopModel;
 
