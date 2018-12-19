@@ -430,7 +430,7 @@ export class DesktopWindow implements DesktopEntity {
 
             // Unsnap from any existing windows
             if (wasSnapped) {
-                await this.unsnap();
+                // await this.unsnap();
             }
 
             // Snap to any other windows in the new group
@@ -626,9 +626,9 @@ export class DesktopWindow implements DesktopEntity {
             return Promise.all([this.sync(), other.sync()]).then(() => {
                 const joinGroupPromise: Promise<void> = (async () => {
                     if (this._ready && group === this._snapGroup) {
-                        await this._window.joinGroup(other._window).catch((error) => this.checkClose(error));
+                    //     await this._window.joinGroup(other._window).catch((error) => this.checkClose(error));
 
-                        // Re-fetch window list in case it has changed during sync
+                     // Re-fetch window list in case it has changed during sync
                         const windows: DesktopWindow[] = this._snapGroup.windows as DesktopWindow[];
 
                         // Bring other windows in group to front
@@ -871,6 +871,7 @@ export class DesktopWindow implements DesktopEntity {
     }
 
     private handleBeginUserBoundsChanging(event: fin.WindowBoundsEvent) {
+        this.setSnapGroup(new DesktopSnapGroup());
         this._userInitiatedBoundsChange = true;
     }
 
