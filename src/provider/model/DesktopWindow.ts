@@ -631,7 +631,7 @@ export class DesktopWindow implements DesktopEntity {
                         } else {
                             await this._window.once('begin-user-bounds-changing', () => {
                                 //This probably needs to change
-                                this.unsnap(dockOnSnap);
+                                this.setSnapGroup(new DesktopSnapGroup(), dockOnSnap);
                             });
                         }
                         // Re-fetch window list in case it has changed during sync
