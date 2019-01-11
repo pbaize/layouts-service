@@ -142,12 +142,12 @@ export class DesktopTabGroup implements DesktopEntity {
         return this.updateWindows(window => window.resetOverride(property));
     }
 
-    public async setSnapGroup(group: DesktopSnapGroup): Promise<void> {
+    public async setSnapGroup(group: DesktopSnapGroup, dockOnSnap = true): Promise<void> {
         const windows = this._tabs.concat(this._window);
 
         return Promise
             .all(windows.map((window: DesktopWindow) => {
-                return window.setSnapGroup(group);
+                return window.setSnapGroup(group, dockOnSnap);
             }))
             .then(() => {});
     }

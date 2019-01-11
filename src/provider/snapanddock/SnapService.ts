@@ -45,6 +45,7 @@ export class SnapService {
      * Flag to disable / enable docking.
      */
     public disableDockingOperations = false;
+    public dockOnSnap = false;
 
     private _resolver: Resolver;
 
@@ -168,7 +169,7 @@ export class SnapService {
 
             if (!this.disableDockingOperations) {
                 // Dock all windows in activeGroup to snapTarget.group
-                snapTarget.activeWindow.setSnapGroup(snapTarget.group);
+                snapTarget.activeWindow.setSnapGroup(snapTarget.group, this.dockOnSnap);
 
                 // The active group should now have been removed (since it is empty)
                 if (this._model.snapGroups.indexOf(activeGroup) >= 0) {

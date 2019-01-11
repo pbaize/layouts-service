@@ -2,7 +2,7 @@ import deepEqual from 'fast-deep-equal';
 import {Identity, Window} from 'hadouken-js-adapter';
 
 import {SERVICE_IDENTITY} from '../../client/internal';
-import {apiHandler} from '../main';
+import {apiHandler, snapService} from '../main';
 import {Signal1, Signal2} from '../Signal';
 import {promiseMap} from '../snapanddock/utils/async';
 import {isWin10} from '../snapanddock/utils/platform';
@@ -171,7 +171,7 @@ export class DesktopWindow implements DesktopEntity {
      */
     public static async transaction(windows: DesktopWindow[], transform: (windows: DesktopWindow[]) => Promise<void>): Promise<void> {
         await Promise.all(windows.map(w => w.sync()));
-        await Promise.all(windows.map(w => w.unsnap()));
+        await Promise.all(windows.map(w => w.unsnap(true)));
         // await Promise.all(windows.map(w => w.sync()));
         await transform(windows);
         await Promise.all(windows.map(w => w.snap()));
@@ -421,7 +421,7 @@ export class DesktopWindow implements DesktopEntity {
      * @param offset An offset to apply to this windows position (use this to enusre window is in correct position)
      * @param newHalfSize Can also simultaneously change the size of the window
      */
-    public async setSnapGroup(group: DesktopSnapGroup): Promise<void> {
+    public async setSnapGroup(group: DesktopSnapGroup, dockOnSnap = true): Promise<void> {
         if (group !== this._snapGroup) {
             const wasSnapped = this._snapGroup.windows.length > 1;
 
@@ -430,12 +430,12 @@ export class DesktopWindow implements DesktopEntity {
 
             // Unsnap from any existing windows
             if (wasSnapped) {
-                await this.unsnap();
+                await this.unsnap(dockOnSnap);
             }
 
             // Snap to any other windows in the new group
             if (this._snapGroup.windows.length > 1) {
-                await this.snap();
+                await this.snap(dockOnSnap);
             }
         }
 
@@ -613,7 +613,7 @@ export class DesktopWindow implements DesktopEntity {
         }
     }
 
-    private snap(): Promise<void> {
+    private snap(dockOnSnap = true): Promise<void> {
         const group: DesktopSnapGroup = this._snapGroup;
         const windows: DesktopWindow[] = this._snapGroup.windows as DesktopWindow[];
         const count = windows.length;
@@ -626,8 +626,14 @@ export class DesktopWindow implements DesktopEntity {
             return Promise.all([this.sync(), other.sync()]).then(() => {
                 const joinGroupPromise: Promise<void> = (async () => {
                     if (this._ready && group === this._snapGroup) {
-                        await this._window.joinGroup(other._window).catch((error) => this.checkClose(error));
-
+                        if (dockOnSnap) {
+                            await this._window.joinGroup(other._window).catch((error) => this.checkClose(error));
+                        } else {
+                            await this._window.once('begin-user-bounds-changing', () => {
+                                //This probably needs to change
+                                this.unsnap(dockOnSnap);
+                            });
+                        }
                         // Re-fetch window list in case it has changed during sync
                         const windows: DesktopWindow[] = this._snapGroup.windows as DesktopWindow[];
 
@@ -656,9 +662,9 @@ export class DesktopWindow implements DesktopEntity {
         }
     }
 
-    private unsnap(): Promise<void> {
+    private unsnap(undockOnUnsnap: boolean): Promise<void> {
         // TODO: Wrap with 'addPendingActions'?..
-        if (this._ready) {
+        if (this._ready && undockOnUnsnap) {
             return this._window.leaveGroup();
         } else {
             return Promise.resolve();

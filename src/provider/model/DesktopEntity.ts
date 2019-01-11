@@ -72,7 +72,7 @@ export interface DesktopEntity {
      *
      * @param group The new snap group for this entity
      */
-    setSnapGroup(group: DesktopSnapGroup): Promise<void>;
+    setSnapGroup(group: DesktopSnapGroup, dockOnSnap?: boolean): Promise<void>;
 
     /**
      * Will move and/or resize this entity. Both operations are performed using the centre of the entity as the reference point.
