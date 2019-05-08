@@ -39,7 +39,20 @@ const supportedScaleFactors = [1, 1.5, 2];
 
 export async function main() {
     const monitorInfo = await fin.System.getMonitorInfo();
-
+    fin.System.on('window-begin-user-bounds-changing', async (a) => {
+        const win = await fin.Window.wrap(a);
+        let disabled = false;
+        const disabledListener = () => {
+            disabled = true
+        }
+        win.once('disabled-frame-bounds-changing', disabledListener);
+        win.once('bounds-changed', () => {
+            if (!disabled) {
+                win.leaveGroup();
+                win.removeListener('disabled-frame-bounds-changing', disabledListener)
+            }
+        })
+    })
     // Disable the service if display scaling is not a supported scale factor
     if (!supportedScaleFactors.some(scaleFactor => scaleFactor === monitorInfo.deviceScaleFactor)) {
         console.error('Desktop has non-standard display scaling. Notifying user and disabling all layouts functionality.');
