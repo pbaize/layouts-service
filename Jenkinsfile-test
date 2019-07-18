@@ -1,0 +1,18 @@
+pipeline {
+    agent { label 'linux-slave' }
+    options { timestamps() }
+
+    stages {
+        stage('Build') {
+            steps {
+                sh "npm install --ignore-scripts"
+                sh "npm run clean"
+                sh "SERVICE_VERSION=${BUILD_VERSION} npm run build"
+                sh "S3LOC=s3://cdn.openfin.co/demos/cs-layouts"
+                sh "aws s3 cp ./res/provider ${S3_LOC}/ --recursive"
+                sh "aws s3 cp ./dist/provider ${S3_LOC}/ --recursive"
+                sh "aws s3 cp ./ ${S3_LOC}/ --recursive --exclude '*' --include 'app-test.json' --content-type 'application/json'"
+            }
+        }
+    }
+}
