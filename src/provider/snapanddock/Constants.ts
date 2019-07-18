@@ -25,7 +25,7 @@ export const ADJACENCY_FUZZ_DISTANCE = 2;
 /**
  * Defines the distance windows will be moved when undocked.
  */
-export const UNDOCK_MOVE_DISTANCE = 30;
+export const UNDOCK_MOVE_DISTANCE = 0;
 
 /**
  *  Scaling factor for explosion spread.

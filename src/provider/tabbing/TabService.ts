@@ -310,7 +310,7 @@ export class TabService {
             }
 
             // Create new tab group
-            await this.createTabGroupWithTabs([windowUnderPoint.identity, activeIdentity], activeIdentity);
+            await fin.InterApplicationBus.send(activeIdentity, 'should-tab-to', windowUnderPoint.identity);
         } else if (target.type === eTargetType.EJECT && existingTabGroup) {
             // If there are no windows under the point and we are being ejected from a tab group
 

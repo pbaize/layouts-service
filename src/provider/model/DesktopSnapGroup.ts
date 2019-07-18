@@ -293,7 +293,7 @@ export class DesktopSnapGroup {
         }
     }
 
-    private removeWindow(window: DesktopWindow): void {
+    public removeWindow(window: DesktopWindow): void {
         const index: number = this._windows.indexOf(window);
 
         if (index >= 0) {

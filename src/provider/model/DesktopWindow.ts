@@ -780,7 +780,7 @@ export class DesktopWindow implements DesktopEntity {
                             return;
                         }
 
-                        await this._window.mergeGroups(target._window).catch((error) => this.checkClose(error));
+                        // await this._window.mergeGroups(target._window).catch((error) => this.checkClose(error));
 
                         // Re-fetch window list in case it has changed during sync
                         const windows: DesktopWindow[] = this._snapGroup.windows as DesktopWindow[];
